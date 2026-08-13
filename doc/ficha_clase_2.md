@@ -20,8 +20,6 @@ Analizar y delimitar una funcionalidad antes de diseñar clases o escribir códi
 
 > **Regla de trabajo:** en esta clase no se diseñan clases, atributos ni métodos. Primero se justifica qué se necesita; la solución técnica comenzará en la Clase 3.
 
-Sí, claro. Te lo dejo en formato de código/bloque de texto, manteniendo la misma estructura que me diste y completando únicamente los COMPLETAR.
-
 ## Situación inicial
 
 > Un entrenador se encuentra con una criatura salvaje cercana e intenta capturarla utilizando una cápsula de su inventario.
