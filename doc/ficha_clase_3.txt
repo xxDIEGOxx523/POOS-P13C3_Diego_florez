@@ -1,0 +1,171 @@
+# Ficha de trabajo – Clase 3
+
+## Identificación
+
+- **Nombre:** COMPLETAR
+- **Sección:** COMPLETAR
+- **Fecha:** COMPLETAR
+- **Compañero(a) de trabajo:** COMPLETAR
+- **Repositorio individual:** `completar`
+
+# Parte 0. Punto de partida validado
+
+Este caso representa el **mínimo esperado al finalizar la Clase 2**. Se utilizará como evidencia común para comenzar el diseño orientado a objetos. No reemplaza la entrega individual de la ficha anterior.
+
+## Funcionalidad
+
+Captura básica de una criatura.
+
+## Actor principal
+
+Entrenador.
+
+## Necesidad
+
+Capturar una criatura salvaje disponible utilizando una cápsula de su inventario.
+
+## Entradas
+
+- Criatura seleccionada.
+- Disponibilidad de la criatura.
+- Distancia entre el entrenador y la criatura.
+- Cantidad de cápsulas.
+- Probabilidad de captura.
+
+## Proceso
+
+1. Verificar que la criatura esté disponible.
+2. Verificar que se encuentre dentro de la distancia permitida.
+3. Verificar que el entrenador tenga cápsulas.
+4. Consumir una cápsula.
+5. Determinar si la captura tiene éxito.
+6. Registrar la criatura si la captura es exitosa.
+7. Informar el resultado.
+
+## Salidas
+
+- Captura exitosa.
+- Captura fallida.
+- Mensaje de rechazo por criatura no disponible.
+- Mensaje de rechazo por distancia.
+- Mensaje de rechazo por falta de cápsulas.
+- Cantidad actualizada de cápsulas.
+
+## Reglas
+
+- Solo se puede intentar capturar una criatura por operación.
+- Cada intento válido consume una cápsula.
+- Un intento rechazado no consume cápsulas.
+- La criatura se registra únicamente si la captura tiene éxito.
+- La criatura debe estar disponible y dentro de la distancia permitida.
+
+## Dentro del alcance
+
+- Selección de la criatura.
+- Validaciones de disponibilidad, distancia e inventario.
+- Consumo de la cápsula.
+- Resolución del intento.
+- Registro de la criatura.
+- Información del resultado.
+
+## Fuera del alcance
+
+- GPS real.
+- Combates.
+- Animaciones.
+- Intercambio de criaturas.
+- Funciones sociales.
+
+## Criterios de aceptación
+
+### Criterio 1: intento sin cápsulas
+
+- **Dado** que el entrenador no tiene cápsulas,
+- **cuando** intenta capturar una criatura,
+- **entonces** el sistema rechaza la acción, no modifica el inventario e informa que no hay cápsulas disponibles.
+
+### Criterio 2: intento válido
+
+- **Dado** que la criatura está disponible, se encuentra dentro de la distancia permitida y el entrenador tiene cápsulas,
+- **cuando** realiza un intento de captura,
+- **entonces** el sistema consume exactamente una cápsula, determina el resultado e informa si la captura tuvo éxito o falló.
+
+### Criterio 3: criatura fuera de rango
+
+- **Dado** que la criatura se encuentra fuera de la distancia permitida,
+- **cuando** el entrenador intenta capturarla,
+- **entonces** el sistema rechaza la acción, no consume cápsulas e informa que la criatura está fuera de rango.
+
+### Criterio 4: captura exitosa
+
+- **Dado** que el entrenador realiza un intento válido,
+- **cuando** el resultado de la captura es exitoso,
+- **entonces** la criatura se registra en su colección y el sistema informa la captura exitosa.
+
+---
+
+
+# Tarjetas de clase y responsabilidades
+
+
+## Clase Plantilla
+
+- **Nombre:** COMPLETAR
+- **Responsabilidad principal:** COMPLETAR
+- **Atributos necesarios:** COMPLETAR
+- **Métodos posibles:** COMPLETAR
+- **Clase con la que necesita colaborar:** COMPLETAR
+- **Regla o criterio de aceptación que la justifica:** COMPLETAR
+- **Responsabilidad que no debería asumir:** COMPLETAR
+
+
+## Comprobación de coherencia
+
+1. ¿Existe una clase que concentre casi todas las acciones? ¿Cuál y qué responsabilidad debería trasladarse?
+
+   **Respuesta:** COMPLETAR
+
+2. ¿Existe un método en una clase que no posee los datos necesarios para realizarlo?
+
+   **Respuesta:** COMPLETAR
+
+3. ¿Existe el mismo atributo en varias clases sin una justificación clara?
+
+   **Respuesta:** COMPLETAR
+
+---
+
+# Instancias u objetos concretos
+
+Elige una de tus clases y crea dos objetos con estados distintos.
+
+- **Clase seleccionada:** COMPLETAR
+
+| Atributo | Objeto 1: `COMPLETAR` | Objeto 2: `COMPLETAR` |
+|----------|-----------------------|-----------------------|
+| COMPLETAR | COMPLETAR | COMPLETAR |
+| COMPLETAR | COMPLETAR | COMPLETAR |
+| COMPLETAR | COMPLETAR | COMPLETAR |
+
+- **Método que ambos objetos pueden ejecutar:** COMPLETAR
+- **¿Qué comparten por pertenecer a la misma clase?:** COMPLETAR
+- **¿Qué cambia entre ambos objetos?:** COMPLETAR
+
+---
+
+# Trazabilidad con los criterios de aceptación
+
+Relaciona cada comportamiento esperado con las responsabilidades propuestas.
+
+| Criterio | ¿Qué información se necesita? | ¿Qué clase debería conocerla? | ¿Qué acción debe realizarse? | ¿Qué clase debería realizarla? |
+|----------|-------------------------------|-------------------------------|------------------------------|--------------------------------|
+| Sin cápsulas | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
+| Intento válido | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
+| Fuera de rango | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
+| Captura exitosa | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
+
+## Pregunta de análisis
+
+¿Existe algún criterio de aceptación que no pueda cumplirse con las clases y responsabilidades propuestas?
+
+**Respuesta y ajuste necesario:** COMPLETAR
