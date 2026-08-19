@@ -2,9 +2,9 @@
 
 ## Identificación
 
-- **Nombre:** COMPLETAR
-- **Sección:** COMPLETAR
-- **Fecha:** COMPLETAR
+- **Nombre:** Diego florez
+- **Sección:** TI3021
+- **Fecha:** 19/08/26
 - **Compañero(a) de trabajo:** COMPLETAR
 - **Repositorio individual:** `completar`
 
@@ -110,20 +110,20 @@ Capturar una criatura salvaje disponible utilizando una cápsula de su inventari
 
 ## Clase Plantilla
 
-- **Nombre:** COMPLETAR
-- **Responsabilidad principal:** COMPLETAR
-- **Atributos necesarios:** COMPLETAR
-- **Métodos posibles:** COMPLETAR
-- **Clase con la que necesita colaborar:** COMPLETAR
-- **Regla o criterio de aceptación que la justifica:** COMPLETAR
-- **Responsabilidad que no debería asumir:** COMPLETAR
+- **Nombre:** tipo de pokebolas
+- **Responsabilidad principal:** la chance de que la pokebola tenga exito o n o
+- **Atributos necesarios:** probabilidad de exito o fallo de la captura
+- **Métodos posibles:** intentos para capturar a dicho pokemon 
+- **Clase con la que necesita colaborar:** pokemon y el inventario
+- **Regla o criterio de aceptación que la justifica:** que la pokebola de en el objetivo 
+- **Responsabilidad que no debería asumir:** la velocidad a la hora de lanzar la pokebola
 
 
 ## Comprobación de coherencia
 
 1. ¿Existe una clase que concentre casi todas las acciones? ¿Cuál y qué responsabilidad debería trasladarse?
 
-   **Respuesta:** COMPLETAR
+   **Respuesta:** los 
 
 2. ¿Existe un método en una clase que no posee los datos necesarios para realizarlo?
 
@@ -143,13 +143,13 @@ Elige una de tus clases y crea dos objetos con estados distintos.
 
 | Atributo | Objeto 1: `COMPLETAR` | Objeto 2: `COMPLETAR` |
 |----------|-----------------------|-----------------------|
-| COMPLETAR | COMPLETAR | COMPLETAR |
-| COMPLETAR | COMPLETAR | COMPLETAR |
-| COMPLETAR | COMPLETAR | COMPLETAR |
+| cantidad de pokebolas | tipo de pokebola | porcentaje de exito de la pokebola |
+| acciones del pokemon | daño del ataque | velocidad del ataque |
+| vida del pokemon | recistencia del pokemon | afinidad elemental del pokemon |
 
-- **Método que ambos objetos pueden ejecutar:** COMPLETAR
-- **¿Qué comparten por pertenecer a la misma clase?:** COMPLETAR
-- **¿Qué cambia entre ambos objetos?:** COMPLETAR
+- **Método que ambos objetos pueden ejecutar:** en una pelea pueden darse estos objetos
+- **¿Qué comparten por pertenecer a la misma clase?:** comparte que pertenecian al mismo pokemon por ejemplo
+- **¿Qué cambia entre ambos objetos?:** las aplicaciones que estos tienen sobre el pokemon 
 
 ---
 
@@ -159,13 +159,13 @@ Relaciona cada comportamiento esperado con las responsabilidades propuestas.
 
 | Criterio | ¿Qué información se necesita? | ¿Qué clase debería conocerla? | ¿Qué acción debe realizarse? | ¿Qué clase debería realizarla? |
 |----------|-------------------------------|-------------------------------|------------------------------|--------------------------------|
-| Sin cápsulas | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
-| Intento válido | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
-| Fuera de rango | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
-| Captura exitosa | COMPLETAR | COMPLETAR | COMPLETAR | COMPLETAR |
+| Sin cápsulas | cual es la cantidad de capsulas | inventario | comprar mas capsulas | cantidad de capsulas |
+| Intento válido | porcentaje de exito | pokemon y pokebolas | realizar una captura | pokebolas |
+| Fuera de rango | rango minimo y maximo  | captura de pokemon | usar una pokebola | captura de un pokemon  |
+| Captura exitosa | que se capturo | pokemon | proceder a la captura de un pokemon  | pokebolas y probabilidad de exito |
 
 ## Pregunta de análisis
 
 ¿Existe algún criterio de aceptación que no pueda cumplirse con las clases y responsabilidades propuestas?
 
-**Respuesta y ajuste necesario:** COMPLETAR
+**Respuesta y ajuste necesario:** Sí, existen múltiples criterios de aceptación que no pueden cumplirse con el diseño de clases y responsabilidades propuesto actualmente en la ficha. El primer gran problema se encuentra en el Criterio 1 (Sin cápsulas); en la tabla de trazabilidad se asignó la acción de "comprar más cápsulas", lo cual contradice directamente el requerimiento del modelo, el cual exige que el sistema rechace la acción e informe la falta de recursos. Además, la acción de compra está fuera del alcance de este caso de uso. El segundo error crítico afecta al Criterio 3 (Fuera de rango); para validar si una criatura está dentro de la distancia permitida, el sistema necesita procesar la ubicación o distancia entre el entrenador y la criatura. Sin embargo, ninguna de las clases propuestas tiene el atributo de "distancia" ni la responsabilidad de controlarlo, aislando esta validación en una clase ambigua llamada "captura de pokemon". Finalmente, el Criterio 4 (Captura exitosa) no se puede cumplir porque el requerimiento exige registrar la criatura en la colección del entrenador. En la propuesta actual, se le asigna esta lógica a "pokebolas y probabilidad de éxito", lo cual rompe las reglas del diseño orientado a objetos, ya que una pokébola no debería tener la responsabilidad de gestionar el inventario global de un jugador.Para solucionar estas inconsistencias y lograr que el diseño sea coherente, se deben realizar los siguientes ajustes obligatorios: en primer lugar, es indispensable crear la clase Entrenador (o Inventario), la cual debe ser la dueña legítima de la cantidad de cápsulas y de la colección de criaturas capturadas. En segundo lugar, se debe redefinir la acción del Criterio 1 para que sea una validación de estado (un método que verifique si hay cápsulas disponibles y bloquee el flujo) en lugar de una transacción de compra. Por último, se debe agregar el atributo de distancia dentro de la clase que gestione el intento de captura, permitiendo que el sistema pueda rechazar de forma efectiva la operación antes de consumir cualquier recurso cuando el Pokémon se encuentre fuera de rango.
