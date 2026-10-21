@@ -1,0 +1,12 @@
+# Entorno virtual del proyecto
+.venv/
+
+# Configuración del editor de código
+.vscode/
+
+# Archivos con credenciales y variables de entorno secretas
+.env
+
+__pycache__/
+*.pyc
+.env

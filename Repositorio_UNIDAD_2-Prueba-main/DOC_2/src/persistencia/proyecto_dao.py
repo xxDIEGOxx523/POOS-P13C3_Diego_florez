@@ -91,6 +91,21 @@ class ProyectoDAO(IProyectoDAO):
             cursor.close()
             conexion.close()
 
+    def tiene_asignacion(self, id_proyecto, id_empleado):
+        """Indica si ya existe la relacion empleado-proyecto."""
+        conexion = abrir_conexion()
+        cursor = conexion.cursor()
+        try:
+            cursor.execute(
+                "SELECT 1 FROM empleado_proyecto "
+                "WHERE id_proyecto=%s AND id_empleado=%s LIMIT 1",
+                (id_proyecto, id_empleado),
+            )
+            return cursor.fetchone() is not None
+        finally:
+            cursor.close()
+            conexion.close()
+
     def desasignar_empleado(self, id_proyecto, id_empleado):
         conexion = abrir_conexion()
         cursor = conexion.cursor()

@@ -107,4 +107,21 @@ class Empleado:
 
     def obtener_permisos(self):
         return []
+        # === AGREGAR ESTO AL FINAL DE LA CLASE EMPLEADO ===
 
+    def calcular_salario_usd(self, valor_dolar: float, fecha_referencia: str) -> float:
+        """Calcula de forma segura el salario equivalente en dólares usando
+
+        la cotización externa validada (Exigido en Slide 4).
+        """
+        if not valor_dolar or valor_dolar <= 0:
+            raise ValueError("El valor del dólar para la conversión debe ser mayor a cero.")
+        
+        salario_usd = self.salario / valor_dolar
+        
+        print(f"\n[EcoTech - Conversión de Referencia]")
+        print(f"- Salario Actual: {self.salario:,} CLP")
+        print(f"- Equivalente estimado: {salario_usd:.2f} USD")
+        print(f"- Fuente de datos: Referencia externa del {fecha_referencia}")
+        
+        return salario_usd
