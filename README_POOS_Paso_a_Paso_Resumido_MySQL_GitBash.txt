@@ -298,3 +298,44 @@ REGLA PARA RECORDAR
 -------------------
 
 UML → CLASES → POO → MYSQL → CRUD → VALIDACIONES → PRUEBAS → IA → DEFENSA
+
+
+=== UNIDAD 3: LOGIN, SEMILLA AUTOMATICA Y API ===
+
+1. Instale las dependencias desde la carpeta raíz:
+   python -m pip install -r requirements.txt
+2. Copie .env.example a .env y configure usuario/contraseña de MySQL.
+3. Ejecute desde la carpeta src:
+   python main.py
+4. El programa crea la base y tablas, y carga la semilla automáticamente sin duplicarla.
+5. Si se crea la cuenta demo, se muestran sus credenciales iniciales en pantalla.
+   Usuario: admin@ecotech.local | Contraseña temporal: EcoTech2026!
+   Cambie la contraseña temporal después de ingresar.
+6. Las contraseñas se almacenan como hash bcrypt y getpass oculta la entrada.
+7. La opción 13 consulta el dólar observado en mindicador.cl. Requiere internet.
+
+Nota: mantenga .env fuera del repositorio y no comparta sus credenciales de MySQL.
+
+
+USAR MYSQL O SQLITE EN ECOTECH SOLUTIONS
+----------------------------------------
+El programa utiliza UN solo motor de base de datos por ejecución. Selecciónelo en el archivo .env mediante DB_BACKEND.
+
+Para MySQL (modo predeterminado):
+    DB_BACKEND=mysql
+    DB_HOST=localhost
+    DB_PORT=3306
+    DB_USER=root
+    DB_PASSWORD=tu_clave
+    DB_NAME=ecotech_db
+
+Para SQLite (base local en un archivo):
+    DB_BACKEND=sqlite
+    SQLITE_PATH=ecotech.db
+
+Al cambiar de motor, detenga el programa y cambie DB_BACKEND en .env. MySQL y SQLite son bases separadas: los datos guardados en una no se copian automáticamente a la otra. SQLite no requiere servidor ni usuario/contraseña. El archivo ecotech.db se crea automáticamente en la raíz del proyecto.
+
+Instale las dependencias desde la raíz del proyecto en PowerShell: 
+    python -m pip install -r requirements.txt
+
+Después ejecute main.py desde la carpeta DOC_2/src. El esquema y la semilla se preparan automáticamente para el motor seleccionado.

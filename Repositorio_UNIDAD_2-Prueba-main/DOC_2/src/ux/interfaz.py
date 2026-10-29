@@ -12,18 +12,23 @@ from semilla import cargar_semilla, imprimir_resumen
 class TerminalInterface:
     ANCHO = 68
 
-    def __init__(self, registro_dao, empleado_dao, proyecto_dao, departamento_dao):
+    def __init__(self, registro_dao, empleado_dao, proyecto_dao, departamento_dao,
+                 usuario=None, autenticacion=None):
         self.registro_dao = registro_dao
         self.empleado_dao = empleado_dao
         self.proyecto_dao = proyecto_dao
         self.departamento_dao = departamento_dao
+        self.usuario = usuario or {}
+        self.autenticacion = autenticacion
 
     # -------------------- MENU E INTERACCION --------------------
     def mostrar_menu(self):
         linea = "=" * self.ANCHO
         print("\n" + linea)
         print("                 ECOTECH SOLUTIONS")
-        print("             Sistema de gestion interna")
+        print("          Sistema de gestión interna | MySQL")
+        if self.usuario.get("correo"):
+            print(f"          Sesión: {self.usuario['correo']}")
         print(linea)
         print("  EMPLEADOS")
         print("    [1] Registrar empleado")
@@ -38,9 +43,11 @@ class TerminalInterface:
         print("    [6] Listar proyectos")
         print("    [7] Registrar tiempo trabajado")
         print("    [8] Listar registros de tiempo")
-        print("  SISTEMA")
-        print("   [11] Salir")
-        print("   [12] Cargar semilla de datos ficticios")
+        print("  CONSULTAS Y SISTEMA")
+        print("    [11] Cerrar sesión y salir")
+        print("    [12] Cargar semilla de datos ficticios")
+        print("    [13] Consultar dólar observado (API)")
+        print("    [14] Cambiar contraseña")
         print(linea)
         print("Los campos tienen limites de longitud y formato.")
 
@@ -57,6 +64,8 @@ class TerminalInterface:
             "9": self._actualizar_empleado,
             "10": self._eliminar_empleado,
             "12": self._cargar_semilla,
+            "13": self._consultar_dolar,
+            "14": self._cambiar_password,
         }
 
         while True:
@@ -267,6 +276,44 @@ class TerminalInterface:
                 print("No se pudo eliminar el empleado.")
         else:
             print("Eliminacion cancelada.")
+
+    def _cambiar_password(self):
+        from getpass import getpass
+        self._titulo("CAMBIAR CONTRASEÑA")
+        if not self.autenticacion or not self.usuario.get("id_usuario"):
+            print("No hay una sesión autenticada disponible.")
+            return
+        actual = getpass("Contraseña actual (entrada oculta): ")
+        nueva = getpass("Nueva contraseña (mínimo 10 caracteres, letras y números): ")
+        repetir = getpass("Repita la nueva contraseña: ")
+        if nueva != repetir:
+            print("Las contraseñas nuevas no coinciden.")
+            return
+        try:
+            self.autenticacion.cambiar_password(self.usuario["id_usuario"], actual, nueva)
+            print("Contraseña actualizada correctamente.")
+        except ValueError as error:
+            print(f"No se pudo cambiar la contraseña: {error}")
+
+    def _consultar_dolar(self):
+        self._titulo("DÓLAR OBSERVADO - API")
+        try:
+            import math
+            import requests
+            respuesta = requests.get("https://mindicador.cl/api/dolar", timeout=(3, 5))
+            respuesta.raise_for_status()
+            datos = respuesta.json()
+            if not isinstance(datos, dict) or not isinstance(datos.get("serie"), list) or not datos["serie"]:
+                raise ValueError("La API no entregó una serie válida.")
+            registro = datos["serie"][0]
+            valor = registro.get("valor")
+            fecha = registro.get("fecha")
+            if type(valor) not in (int, float) or not math.isfinite(valor) or valor <= 0:
+                raise ValueError("El valor del dólar recibido no es válido.")
+            print(f"Valor de referencia: ${valor:,.2f} CLP por USD")
+            print(f"Fecha de referencia: {fecha}")
+        except Exception as error:
+            print(f"No fue posible consultar el dólar ahora: {error}")
 
     def _cargar_semilla(self):
         self._titulo("CARGAR SEMILLA DE DATOS FICTICIOS")

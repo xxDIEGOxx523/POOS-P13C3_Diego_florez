@@ -25,13 +25,6 @@ CREATE TABLE IF NOT EXISTS empleado (
         ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-ALTER TABLE departamento
-    ADD CONSTRAINT fk_departamento_gerente
-    FOREIGN KEY (id_gerente)
-    REFERENCES empleado(id_empleado)
-    ON UPDATE CASCADE
-    ON DELETE SET NULL;
-
 CREATE TABLE IF NOT EXISTS proyecto (
     id_proyecto INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -64,4 +57,15 @@ CREATE TABLE IF NOT EXISTS registro_tiempo (
     FOREIGN KEY (id_proyecto)
         REFERENCES proyecto(id_proyecto)
         ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    id_empleado INT NOT NULL UNIQUE,
+    correo VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_usuario_empleado FOREIGN KEY (id_empleado)
+        REFERENCES empleado(id_empleado) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;

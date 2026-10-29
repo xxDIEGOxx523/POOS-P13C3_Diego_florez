@@ -1,92 +1,40 @@
+"""Prueba de consulta y validación de la API del dólar observado en Chile."""
 import math
 import requests
 
-# 🛠️ CAMBIA ESTO A True PARA PROBAR LA SERIE VACÍA EXIGIDA EN LA EVALUACIÓN
-PROBAR_SERIE_VACIA = False
+URL = "https://mindicador.cl/api/dolar"
 
 
-# --- PASO 1: CONSULTA CON SIMULACIÓN DE RESPALDO (MOCK) ---
 def obtener_datos():
-    """Intenta conectar a internet.
-
-    Si falla, simula respuestas exitosas o vacías según la prueba.
-    """
-    if PROBAR_SERIE_VACIA:
-        print("\n[!] Simulando un caso de error: RESPUESTA DE API VACÍA...")
-        # Simula una respuesta donde el diccionario de tasas viene en blanco
-        return "Simulador (Serie Vacía)", {"rates": {}}
-
-    cabeceras = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-
-    try:
-        print("Intentando conectar con la API externa...")
-        respuesta = requests.get(
-            "https://er-api.com",
-            headers=cabeceras,
-            timeout=3,
-        )
-        respuesta.raise_for_status()
-        return "API Real (Online)", respuesta.json()
-
-    except requests.exceptions.RequestException:
-        print(
-            "\n[!] Conexión bloqueada por la red. Activando Modo Simulación..."
-        )
-        json_simulado = {
-            "result": "success",
-            "time_last_update_utc": "Wed, 21 Oct 2026 00:00:00 +0000",
-            "rates": {"CLP": 915.50},
-        }
-        return "Simulador (Local Mock)", json_simulado
+    respuesta = requests.get(URL, timeout=(3, 5))
+    respuesta.raise_for_status()
+    return respuesta.json()
 
 
-# --- PASO 2: EXTRAER EL DATO Y COMPROBARLO (Slide 12) ---
-def extraer_primero(origen, datos):
-    """Aplica las validaciones estrictas requeridas por EcoTech."""
+def extraer_primero(datos):
     if not isinstance(datos, dict):
-        raise ValueError("Respuesta inesperada.")
-
-    tasas = datos.get("rates", {})
-    valor = tasas.get("CLP")
-    fecha = datos.get("time_last_update_utc")
-
-    # Si la serie o el valor no existen en el diccionario (Serie vacía o inválida)
-    if (
-        valor is None
-        or type(valor) not in (int, float)
-        or not math.isfinite(valor)
-        or valor <= 0
-    ):
-        raise ValueError("No hay valores disponibles o el indicador es inválido.")
-
-    return fecha, valor
+        raise ValueError("La respuesta de la API no es un objeto JSON válido.")
+    serie = datos.get("serie")
+    if not isinstance(serie, list) or not serie:
+        raise ValueError("La API no entregó valores en la serie.")
+    primero = serie[0]
+    if not isinstance(primero, dict):
+        raise ValueError("El primer registro de la serie no es válido.")
+    valor = primero.get("valor")
+    if type(valor) not in (int, float) or not math.isfinite(valor) or valor <= 0:
+        raise ValueError("El valor del dólar es inválido.")
+    return primero.get("fecha", "Fecha no informada"), float(valor)
 
 
-# --- PASO 3: EJECUCIÓN DEL PROGRAMA ---
 if __name__ == "__main__":
     try:
-        # 1. Obtener la información
-        origen, datos_api = obtener_datos()
-
-        # 2. Extraer y aplicar filtros de seguridad
-        fecha, valor_dolar = extraer_primero(origen, datos_api)
-
-        # 3. Mostrar el resultado normal
-        print(f"\n=========================================")
-        print(f"¡ÉXITO! Origen utilizado: {origen}")
-        print(f"Dólar observado: {valor_dolar:.2f} CLP por USD")
-        print(f"Fecha de la referencia: {fecha}")
-        print(f"=========================================")
-
-    except (ValueError, KeyError, TypeError) as error:
-        # Aquí se captura de forma segura la serie vacía o datos corruptos
-        print(f"\n=========================================")
-        print(f"[!] FALLO CONTROLADO CORECTAMENTE")
-        print(f"Detalle: {error}")
-        print(f"=========================================")
-
-
-
-
+        fecha, valor = extraer_primero(obtener_datos())
+        print("=" * 48)
+        print("ECOTECH SOLUTIONS | DÓLAR OBSERVADO")
+        print(f"Valor: ${valor:,.2f} CLP por USD")
+        print(f"Fecha: {fecha}")
+        print("=" * 48)
+    except requests.exceptions.RequestException as error:
+        print(f"No se pudo conectar con la API: {error}")
+    except (ValueError, TypeError, KeyError) as error:
+        print(f"La respuesta de la API no es válida: {error}")
