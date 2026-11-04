@@ -98,6 +98,32 @@ class RegistroTiempoDAO(IRegistroTiempoDAO):
             cursor.close()
             conexion.close()
 
+    def listar_por_empleado(self, id_empleado):
+        """Devuelve solo registros laborales del empleado recibido por el servicio."""
+        conexion = abrir_conexion()
+        cursor = conexion.cursor()
+        try:
+            cursor.execute("""
+                SELECT r.id_registro, r.fecha, e.nombre, p.nombre,
+                       r.horas_trabajadas, r.descripcion_trabajo
+                FROM registro_tiempo r
+                INNER JOIN empleado e ON r.id_empleado=e.id_empleado
+                INNER JOIN proyecto p ON r.id_proyecto=p.id_proyecto
+                WHERE r.id_empleado=%s
+                ORDER BY r.fecha DESC, r.id_registro DESC
+            """, (id_empleado,))
+            return [
+                {
+                    "id_registro": fila[0], "fecha": fila[1],
+                    "empleado": fila[2], "proyecto": fila[3],
+                    "horas": fila[4], "descripcion": fila[5],
+                }
+                for fila in cursor.fetchall()
+            ]
+        finally:
+            cursor.close()
+            conexion.close()
+
     def obtener_todos_con_detalles(self):
         conexion = abrir_conexion()
         cursor = conexion.cursor()

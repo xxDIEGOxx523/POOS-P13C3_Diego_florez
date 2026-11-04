@@ -91,11 +91,16 @@ def cargar_semilla(registro_dao, empleado_dao, proyecto_dao, departamento_dao):
             }
 
     # 2. Empleados. El correo funciona como clave estable para reconocerlos.
-    empleados = _indice_por_clave(empleado_dao.obtener_todos(), "correo")
+    filas_empleados = empleado_dao.obtener_todos()
+    empleados = _indice_por_clave(filas_empleados, "correo")
+    # El teléfono de prueba es una clave estable: un empleado puede cambiar su
+    # nombre y correo desde "Mi cuenta" sin que la semilla cree un duplicado.
+    empleados_por_telefono = _indice_por_clave(filas_empleados, "telefono")
     ids_empleado = {}
     for i, nombre in enumerate(NOMBRES_PERSONA, start=1):
         correo = f"semilla.empleado{i:02d}@example.com"
-        existente = empleados.get(correo)
+        telefono_semilla = f"+5697000{i:04d}"
+        existente = empleados.get(correo) or empleados_por_telefono.get(telefono_semilla)
         if existente:
             ids_empleado[i] = existente["id_empleado"]
             resumen["empleado"]["existentes"] += 1
@@ -116,8 +121,10 @@ def cargar_semilla(registro_dao, empleado_dao, proyecto_dao, departamento_dao):
                 "id_empleado": empleado.id_empleado,
                 "nombre": empleado.nombre,
                 "correo": correo,
+                "telefono": telefono_semilla,
                 "id_departamento": ids_departamento[i],
             }
+            empleados_por_telefono[telefono_semilla] = empleados[correo]
 
     # 3. Asignar un gerente ficticio a cada departamento.
     # Los DAO reales y falsos exponen el mismo metodo.

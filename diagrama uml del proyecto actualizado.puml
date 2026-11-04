@@ -1,0 +1,80 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+
+title EcoTech Solutions - Modelo de Clases Principal (5 Entidades)
+
+' ENTIDADES PRINCIPALES
+class Empleado {
+    - id_empleado: Integer
+    - nombre: String
+    - direccion: String
+    - telefono: String
+    - correo: String
+    - fechaInicioContrato: Date
+    - salario: Integer
+    + validar_nombre(nombre): String
+    + validar_correo(correo): String
+    + actualizarDatos(): void
+}
+
+class Usuario {
+    - id: Integer
+    - nombre_usuario: String
+    - password_hash: String
+    - empleado_id: Integer
+    - rol: String = "empleado"
+    + normalizar_usuario(nombre): String
+    + validar_clave(clave): String
+    + validar_rol(rol): String
+}
+
+class Departamento {
+    - nombre: String
+    + creacionDepartamento(): void
+    + editarDepartamento(): void
+    + busquedaDepartamento(): void
+    + eliminacionDepartamento(): void
+    + agregarEmpleado(): void
+    + removerEmpleado(): void
+    + asignarGerente(): void
+    + actualizarDatos(): void
+}
+
+class Proyecto {
+    - nombre: String
+    - descripcion: String
+    - fechaInicio: Date
+    + crearProyecto(): void
+    + editarProyecto(): void
+    + eliminacionProyecto(): void
+    + asignarEmpleado(e: Empleado): void
+    + desasignarEmpleado(e: Empleado): void
+    + actualizarDatos(): void
+}
+
+class RegistroTiempo {
+    - fecha: Date
+    - horasTrabajadas: Float
+    - descripcionTrabajo: String
+    + registrarTiempo(): RegistroTiempo
+    + validarRegistro(): Boolean
+    + actualizarRegistro(): void
+}
+
+' RELACIONES Y MULTIPLICIDADES
+Empleado "1" -- "0..1" Usuario : tiene cuenta >
+Empleado "1..*" -- "1.1" Departamento : trabaja en >
+Empleado "1.1" -- "1.1" Departamento : es gerente de >
+Empleado "1..*" -- "1..*" Proyecto : desarrolla >
+Empleado "1" -- "0..*" RegistroTiempo : registra >
+Proyecto "1" *-- "0..*" RegistroTiempo : contiene >
+
+note right of Usuario
+  El rol limita las acciones.
+  empleado_id identifica los datos propios.
+  Roles válidos: admin, empleado.
+end note
+
+@enduml

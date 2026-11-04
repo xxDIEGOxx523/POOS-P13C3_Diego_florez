@@ -83,6 +83,26 @@ class Empleado:
             raise ValueError("El salario no puede ser negativo.")
         self.__salario = valor
 
+    @staticmethod
+    def validar_nombre(valor):
+        if not isinstance(valor, str):
+            raise TypeError("El nombre debe ser texto.")
+        valor = valor.strip()
+        if not valor or len(valor) > 100:
+            raise ValueError("El nombre debe contener entre 1 y 100 caracteres.")
+        return valor
+
+    @staticmethod
+    def validar_correo(valor):
+        import re
+        if not isinstance(valor, str):
+            raise TypeError("El correo debe ser texto.")
+        valor = valor.strip().lower()
+        patron = r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
+        if len(valor) > 150 or not re.fullmatch(patron, valor):
+            raise ValueError("El correo no tiene un formato válido.")
+        return valor
+
     def registrar_empleado(self):
         return True
 

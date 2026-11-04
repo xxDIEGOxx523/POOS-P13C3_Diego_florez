@@ -78,6 +78,26 @@ class EmpleadoDAO(IEmpleadoDAO):
                 cursor.close()
             conexion.close()
 
+    def actualizar_datos_basicos(self, id_empleado, nombre, correo):
+        """Actualiza únicamente nombre y correo del empleado de la sesión."""
+        conexion = abrir_conexion()
+        cursor = None
+        try:
+            cursor = conexion.cursor()
+            cursor.execute(
+                "UPDATE empleado SET nombre=%s, correo=%s WHERE id_empleado=%s",
+                (nombre, correo, id_empleado),
+            )
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Exception:
+            conexion.rollback()
+            raise
+        finally:
+            if cursor is not None:
+                cursor.close()
+            conexion.close()
+
     def actualizar(self, id_empleado, empleado):
         conexion = abrir_conexion()
         cursor = None

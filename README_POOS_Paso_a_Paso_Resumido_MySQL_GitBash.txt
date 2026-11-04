@@ -300,21 +300,35 @@ REGLA PARA RECORDAR
 UML → CLASES → POO → MYSQL → CRUD → VALIDACIONES → PRUEBAS → IA → DEFENSA
 
 
-=== UNIDAD 3: LOGIN, SEMILLA AUTOMATICA Y API ===
+=== UNIDAD 3: LOGIN, HASH, ROLES Y PERMISOS ===
 
 1. Instale las dependencias desde la carpeta raíz:
    python -m pip install -r requirements.txt
-2. Copie .env.example a .env y configure usuario/contraseña de MySQL.
-3. Ejecute desde la carpeta src:
+2. Copie .env.example a .env y configure DB_BACKEND=mysql o DB_BACKEND=sqlite.
+3. Ejecute desde DOC_2:
    python main.py
-4. El programa crea la base y tablas, y carga la semilla automáticamente sin duplicarla.
-5. Si se crea la cuenta demo, se muestran sus credenciales iniciales en pantalla.
-   Usuario: admin@ecotech.local | Contraseña temporal: EcoTech2026!
-   Cambie la contraseña temporal después de ingresar.
-6. Las contraseñas se almacenan como hash bcrypt y getpass oculta la entrada.
-7. La opción 13 consulta el dólar observado en mindicador.cl. Requiere internet.
+4. El programa crea/migra las tablas y carga la semilla de datos sin duplicarla.
+5. Si no existe cuenta para el primer empleado de semilla, el programa crea la
+   cuenta admin_ecotech y solicita definir una contraseña oculta. Debe tener al
+   menos 10 caracteres, incluir letras y números y no superar 72 bytes UTF-8.
+6. El login utiliza nombre de usuario y getpass oculta la contraseña. bcrypt guarda
+   password_hash, nunca la contraseña original.
+7. El administrador puede crear cuentas de empleado desde su menú. El formulario no
+   permite escoger el rol: las cuentas habituales siempre se crean como empleado.
+8. El empleado solo puede consultar su ficha, revisar sus registros laborales y
+   modificar su propio nombre y correo. El ID se obtiene de la sesión, no del teclado.
+9. El menú administrativo solo se muestra al rol admin. Además, los servicios vuelven
+   a comprobar la sesión/rol antes de consultar o modificar datos.
+10. Cerrar sesión vuelve a la pantalla de login. Repetir la semilla no cambia roles
+    ni eleva cuentas existentes.
+11. La opción API consulta el dólar observado en mindicador.cl. Requiere internet.
 
 Nota: mantenga .env fuera del repositorio y no comparta sus credenciales de MySQL.
+
+El modelo con la entidad Usuario y la relación 1 a 0..1 con Empleado se encuentra en:
+   diagrama uml actualizado roles.svg
+   diagrama uml del proyecto actualizado.puml (fuente PlantUML editable)
+El diagrama SVG original del proyecto se conserva sin cambios.
 
 
 USAR MYSQL O SQLITE EN ECOTECH SOLUTIONS
@@ -338,4 +352,4 @@ Al cambiar de motor, detenga el programa y cambie DB_BACKEND en .env. MySQL y SQ
 Instale las dependencias desde la raíz del proyecto en PowerShell: 
     python -m pip install -r requirements.txt
 
-Después ejecute main.py desde la carpeta DOC_2/src. El esquema y la semilla se preparan automáticamente para el motor seleccionado.
+Después ejecute desde la carpeta DOC_2 con `python main.py`. El esquema y la semilla se preparan automáticamente para el motor seleccionado.

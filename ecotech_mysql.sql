@@ -62,8 +62,10 @@ CREATE TABLE IF NOT EXISTS registro_tiempo (
 CREATE TABLE IF NOT EXISTS usuario (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     id_empleado INT NOT NULL UNIQUE,
+    nombre_usuario VARCHAR(40) NOT NULL UNIQUE,
     correo VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    rol ENUM('admin','empleado') NOT NULL DEFAULT 'empleado',
     activo TINYINT(1) NOT NULL DEFAULT 1,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_usuario_empleado FOREIGN KEY (id_empleado)

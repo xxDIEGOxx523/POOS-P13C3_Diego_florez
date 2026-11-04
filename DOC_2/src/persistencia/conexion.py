@@ -21,7 +21,7 @@ def obtener_configuracion():
     """Conserva la configuración MySQL anterior por compatibilidad."""
     return {
         "host": os.getenv("DB_HOST", "localhost"),
-        "port": int(os.getenv("DB_PORT", "3306")),
+        "port": int(os.getenv("DB_PORT", "3307")),
         "user": os.getenv("DB_USER", "root"),
         "password": os.getenv("DB_PASSWORD", ""),
         "database": os.getenv("DB_NAME", "ecotech_db"),
@@ -101,7 +101,7 @@ def _ruta_sqlite():
     if not ruta.is_absolute():
         # Estable y predecible: archivo en la raíz del repositorio, independiente
         # de la carpeta desde la que se ejecute main.py.
-        raiz = Path(__file__).resolve().parents[4]
+        raiz = Path(__file__).resolve().parents[3]
         ruta = raiz / ruta
     ruta.parent.mkdir(parents=True, exist_ok=True)
     return ruta

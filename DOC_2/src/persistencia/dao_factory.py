@@ -5,7 +5,7 @@ from .registro_tiempo_dao import RegistroTiempoDAO
 
 
 class DAOFactory:
-    """Fábrica de DAOs. El proyecto usa exclusivamente MySQL."""
+    """Fábrica de DAOs. Los DAO funcionan con el motor configurado (MySQL o SQLite)."""
 
     def __init__(self):
         self._empleado_dao = EmpleadoDAO()

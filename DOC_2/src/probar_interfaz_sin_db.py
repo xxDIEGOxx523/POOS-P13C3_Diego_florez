@@ -8,6 +8,12 @@ Este archivo NO reemplaza main.py ni prueba las consultas SQL reales.
 """
 
 from datetime import date
+from pathlib import Path
+import sys
+
+SRC_DIR = Path(__file__).resolve().parent / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from ux.interfaz import TerminalInterface
 
@@ -172,6 +178,7 @@ def main():
         empleado_dao,
         proyecto_dao,
         departamento_dao,
+        usuario={"id_usuario": 1, "empleado_id": 1, "nombre_usuario": "admin_prueba", "rol": "admin"},
     )
     app.iniciar()
 
