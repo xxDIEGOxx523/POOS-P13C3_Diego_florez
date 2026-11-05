@@ -1,0 +1,45 @@
+digraph EcoTechLayers {
+  graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.35", ranksep="0.5", fontname="Arial", label="EcoTech Solutions | Arquitectura por capas y flujo seguro de indicadores", labelloc="t", fontsize=18];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=10, color="#334155", margin="0.18,0.12"];
+  edge [fontname="Arial", fontsize=9, color="#475569", arrowsize=0.8];
+  ux [label="PRESENTACIÓN / UX
+interfaz.py · menu_usuario.py
+Muestra menús y resultados", fillcolor="#d9f4e8"];
+  svc [label="SERVICIOS / APLICACIÓN
+indicadores.py · permisos.py · mi_cuenta.py
+gestion_proyectos.py · autenticacion.py
+Coordina casos de uso y aplica roles/sesión", fillcolor="#ffe5d5"];
+  api [label="CLIENTE HTTP + DESERIALIZADOR
+api_dolar.py · deserializador_indicador.py
+GET → HTTP → JSON → Indicador", fillcolor="#fff0c9"];
+  dom [label="DOMINIO
+Indicador · Usuario · Empleado · Proyecto
+Entidades y validaciones, sin SQL ni HTTP", fillcolor="#e8e0ff"];
+  dao [label="PERSISTENCIA / DAO
+indicador_dao.py · otros DAO · conexion.py
+SQL parametrizado · UPSERT · historial · respaldo", fillcolor="#dcecff"];
+  db [label="BASE DE DATOS SELECCIONADA
+MySQL o SQLite (un motor por ejecución)
+indicador_api: fuente + código + fecha (UNIQUE)", fillcolor="#e2e8f0"];
+  ux -> svc [label="sesión autenticada"];
+  svc -> api [label="consulta externa"];
+  api -> dom [label="objeto validado"];
+  svc -> dao [label="guardar / leer historial / respaldo"];
+  dom -> dao [style=dashed, label="entidad"];
+  dao -> db;
+  roles [shape=note, label="ADMIN
+Gestiona catálogos, asignaciones y registros.
+
+EMPLEADO
+Ve su perfil y proyectos asignados; registra horas
+solo en proyectos asignados y consulta sus registros.
+
+AMBOS
+Pueden consultar el dólar y el historial con sesión.", fillcolor="#f8fafc"];
+  svc -> roles [style=dotted, arrowhead=none, constraint=false];
+  fail [shape=note, label="Si API falla:
+último dato local → origen BD local.
+Sin respaldo → no se inventa un valor.
+El historial nunca llama a la API.", fillcolor="#fff7ed"];
+  dao -> fail [style=dotted, arrowhead=none, constraint=false];
+}

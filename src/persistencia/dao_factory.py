@@ -2,6 +2,7 @@ from .empleado_dao import EmpleadoDAO
 from .departamento_dao import DepartamentoDAO
 from .proyecto_dao import ProyectoDAO
 from .registro_tiempo_dao import RegistroTiempoDAO
+from .indicador_dao import IndicadorDAO
 
 
 class DAOFactory:
@@ -12,6 +13,7 @@ class DAOFactory:
         self._departamento_dao = DepartamentoDAO()
         self._proyecto_dao = ProyectoDAO()
         self._registro_tiempo_dao = RegistroTiempoDAO()
+        self._indicador_dao = IndicadorDAO()
 
     def get_empleado_dao(self):
         return self._empleado_dao
@@ -24,3 +26,6 @@ class DAOFactory:
 
     def get_registro_tiempo_dao(self):
         return self._registro_tiempo_dao
+
+    def get_indicador_dao(self):
+        return self._indicador_dao

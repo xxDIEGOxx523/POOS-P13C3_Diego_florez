@@ -1,7 +1,7 @@
-"""Prueba interactiva de la interfaz EcoTech sin conectar con MySQL.
+"""Prueba interactiva de la interfaz EcoTech sin conectar con una BD real.
 
-Ejecutar desde la carpeta src:
-    python probar_interfaz_sin_db.py
+Ejecutar desde la raíz del proyecto:
+    python DOC_2/src/probar_interfaz_sin_db.py
 
 Los datos se guardan solo en memoria y desaparecen al cerrar el programa.
 Este archivo NO reemplaza main.py ni prueba las consultas SQL reales.
@@ -11,7 +11,8 @@ from datetime import date
 from pathlib import Path
 import sys
 
-SRC_DIR = Path(__file__).resolve().parent / "src"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = Path(__file__).resolve().parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
@@ -49,6 +50,13 @@ class EmpleadoDAOFalso:
     def obtener_todos(self):
         return [self.datos[i].copy() for i in sorted(self.datos)]
 
+    def actualizar_datos_basicos(self, id_empleado, nombre, correo):
+        if id_empleado not in self.datos:
+            return False
+        self.datos[id_empleado]["nombre"] = nombre
+        self.datos[id_empleado]["correo"] = correo
+        return True
+
     def actualizar(self, id_empleado, empleado):
         if id_empleado not in self.datos:
             return False
@@ -77,6 +85,19 @@ class DepartamentoDAOFalso:
 
     def obtener_todos(self):
         return [self.datos[i].copy() for i in sorted(self.datos)]
+
+    def obtener_por_id(self, id_departamento):
+        dato = self.datos.get(id_departamento)
+        return dato.copy() if dato else None
+
+    def actualizar(self, id_departamento, departamento):
+        if id_departamento not in self.datos:
+            return False
+        self.datos[id_departamento]["nombre"] = departamento.nombre
+        return True
+
+    def eliminar(self, id_departamento):
+        return self.datos.pop(id_departamento, None) is not None
 
     def asignar_gerente(self, id_departamento, id_empleado):
         if id_departamento not in self.datos:
@@ -109,6 +130,22 @@ class ProyectoDAOFalso:
     def obtener_todos(self):
         return [self.datos[i].copy() for i in sorted(self.datos)]
 
+    def listar_por_empleado(self, id_empleado):
+        return [self.datos[pid].copy() for pid, eid in sorted(self.asignaciones) if eid == id_empleado and pid in self.datos]
+
+    def actualizar(self, id_proyecto, proyecto):
+        if id_proyecto not in self.datos:
+            return False
+        self.datos[id_proyecto].update({"nombre": proyecto.nombre, "descripcion": proyecto.descripcion, "fecha_inicio": proyecto.fecha_inicio})
+        return True
+
+    def eliminar(self, id_proyecto):
+        if id_proyecto not in self.datos:
+            return False
+        self.datos.pop(id_proyecto)
+        self.asignaciones = {a for a in self.asignaciones if a[0] != id_proyecto}
+        return True
+
     def asignar_empleado(self, id_proyecto, id_empleado):
         pareja = (id_proyecto, id_empleado)
         if pareja in self.asignaciones:
@@ -118,6 +155,13 @@ class ProyectoDAOFalso:
 
     def tiene_asignacion(self, id_proyecto, id_empleado):
         return (id_proyecto, id_empleado) in self.asignaciones
+
+    def desasignar_empleado(self, id_proyecto, id_empleado):
+        pareja = (id_proyecto, id_empleado)
+        if pareja not in self.asignaciones:
+            return False
+        self.asignaciones.remove(pareja)
+        return True
 
 
 class RegistroTiempoDAOFalso:
@@ -163,6 +207,65 @@ class RegistroTiempoDAOFalso:
             })
         return resultado
 
+    def obtener_por_id(self, id_registro):
+        registro = self.datos.get(id_registro)
+        if registro is None:
+            return None
+        return {
+            "id_registro": registro.id_registro,
+            "id_empleado": registro.id_empleado,
+            "id_proyecto": registro.id_proyecto,
+            "fecha": registro.fecha,
+            "horas_trabajadas": registro.horas_trabajadas,
+            "descripcion_trabajo": registro.descripcion_trabajo,
+        }
+
+    def actualizar(self, id_registro, registro):
+        if id_registro not in self.datos:
+            return False
+        registro.id_registro = id_registro
+        registro.validar_registro()
+        self.datos[id_registro] = registro
+        return True
+
+    def eliminar(self, id_registro):
+        return self.datos.pop(id_registro, None) is not None
+
+    def listar_por_empleado(self, id_empleado):
+        resultado = []
+        for registro in self.datos.values():
+            if registro.id_empleado != id_empleado:
+                continue
+            empleado = self.empleado_dao.obtener_por_id(registro.id_empleado)
+            proyecto = self.proyecto_dao.obtener_por_id(registro.id_proyecto)
+            if empleado and proyecto:
+                resultado.append({
+                    "id_registro": registro.id_registro,
+                    "fecha": registro.fecha,
+                    "empleado": empleado["nombre"],
+                    "proyecto": proyecto["nombre"],
+                    "horas": registro.horas_trabajadas,
+                    "descripcion": registro.descripcion_trabajo,
+                })
+        return resultado
+
+
+class IndicadorDAOFalso:
+    def __init__(self):
+        self.datos = []
+
+    def guardar(self, indicador):
+        self.datos = [d for d in self.datos if not (d.fuente == indicador.fuente and d.codigo == indicador.codigo and d.fecha == indicador.fecha)]
+        self.datos.append(indicador)
+        return indicador
+
+    def buscar_ultimo(self, codigo="dolar", fuente="mindicador.cl"):
+        filtrados = [d for d in self.datos if d.codigo == codigo and d.fuente == fuente]
+        return sorted(filtrados, key=lambda d: d.fecha, reverse=True)[0] if filtrados else None
+
+    def listar(self, codigo="dolar"):
+        return sorted([d for d in self.datos if d.codigo == codigo], key=lambda d: d.fecha, reverse=True)
+
 
 def main():
     print("\nMODO DE PRUEBA: SIN CONEXION A MYSQL")
@@ -179,6 +282,7 @@ def main():
         proyecto_dao,
         departamento_dao,
         usuario={"id_usuario": 1, "empleado_id": 1, "nombre_usuario": "admin_prueba", "rol": "admin"},
+        indicador_dao=IndicadorDAOFalso(),
     )
     app.iniciar()
 

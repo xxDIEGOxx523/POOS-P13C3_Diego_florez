@@ -70,3 +70,14 @@ class IRegistroTiempoDAO(ABC):
 
     @abstractmethod
     def obtener_todos_con_detalles(self): pass
+
+
+class IIndicadorDAO(ABC):
+    @abstractmethod
+    def guardar(self, indicador): pass
+
+    @abstractmethod
+    def buscar_ultimo(self, codigo="dolar", fuente="mindicador.cl"): pass
+
+    @abstractmethod
+    def listar(self, codigo="dolar"): pass

@@ -10,20 +10,22 @@ from dominio.registrotiempo import RegistroTiempo
 from dominio.usuario import Usuario
 from semilla import cargar_semilla, imprimir_resumen
 from servicios.permisos import exigir_admin, exigir_sesion
-from servicios import gestion_empleados, mi_cuenta
+from servicios import (gestion_empleados, mi_cuenta, indicadores,
+                        gestion_proyectos, gestion_departamentos, gestion_tiempos)
 
 
 class TerminalInterface:
     ANCHO = 68
 
     def __init__(self, registro_dao, empleado_dao, proyecto_dao, departamento_dao,
-                 usuario=None, autenticacion=None):
+                 usuario=None, autenticacion=None, indicador_dao=None):
         self.registro_dao = registro_dao
         self.empleado_dao = empleado_dao
         self.proyecto_dao = proyecto_dao
         self.departamento_dao = departamento_dao
         self.usuario = usuario or {}
         self.autenticacion = autenticacion
+        self.indicador_dao = indicador_dao
 
     # -------------------- MENU E INTERACCION --------------------
     def mostrar_menu(self):
@@ -43,25 +45,38 @@ class TerminalInterface:
             print("    [4] Listar departamentos")
             print("    [5] Registrar proyecto")
             print("    [6] Listar proyectos")
-            print("    [7] Registrar tiempo trabajado")
+            print("    [7] Registrar tiempo trabajado para un empleado")
             print("    [8] Consultar registros laborales del sistema")
             print("    [9] Actualizar empleado")
             print("   [10] Eliminar empleado")
-            print("   [12] Cargar semilla de datos ficticios")
-            print("   [13] Consultar dólar observado (API)")
-            print("   [14] Cambiar contraseña")
-            print("   [15] Registrar cuenta de empleado")
             print("   [11] Cerrar sesión")
+            print("   [12] Cargar semilla de datos ficticios")
+            print("   [13] Indicadores: consultar dólar / ver historial")
+            print("   [14] Mi ficha")
+            print("   [15] Cambiar contraseña")
+            print("   [16] Registrar cuenta de empleado")
+            print("   [17] Asignar empleado a proyecto")
+            print("   [18] Desasignar empleado de proyecto")
+            print("   [19] Actualizar departamento")
+            print("   [20] Eliminar departamento")
+            print("   [21] Asignar gerente a departamento")
+            print("   [22] Actualizar proyecto")
+            print("   [23] Eliminar proyecto")
+            print("   [24] Actualizar registro de tiempo")
+            print("   [25] Eliminar registro de tiempo")
+            print("   [26] Modificar mi perfil")
         else:
             print("  MI CUENTA")
             print("    [1] Mi ficha")
-            print("    [2] Mis registros laborales")
-            print("    [3] Modificar mi nombre y correo")
-            print("    [4] Consultar dólar observado (API)")
-            print("    [5] Cambiar contraseña")
+            print("    [2] Mis proyectos asignados")
+            print("    [3] Registrar horas en un proyecto asignado")
+            print("    [4] Indicadores: consultar dólar / ver historial")
+            print("    [5] Mis registros laborales")
+            print("    [6] Modificar mi nombre y correo")
+            print("    [7] Cambiar contraseña")
             print("    [9] Cerrar sesión")
         print(linea)
-        print("El sistema comprueba los permisos antes de ejecutar cada operación.")
+        print("Los servicios comprueban la sesión y el rol antes de acceder a los DAO.")
 
     def iniciar(self):
         exigir_sesion(self.usuario)
@@ -78,18 +93,31 @@ class TerminalInterface:
                 "9": self._actualizar_empleado,
                 "10": self._eliminar_empleado,
                 "12": self._cargar_semilla,
-                "13": self._consultar_dolar,
-                "14": self._cambiar_password,
-                "15": self._registrar_cuenta,
+                "13": self._menu_indicadores,
+                "14": self._mostrar_mi_ficha,
+                "15": self._cambiar_password,
+                "16": self._registrar_cuenta,
+                "17": self._asignar_empleado_proyecto,
+                "18": self._desasignar_empleado_proyecto,
+                "19": self._actualizar_departamento,
+                "20": self._eliminar_departamento,
+                "21": self._asignar_gerente,
+                "22": self._actualizar_proyecto,
+                "23": self._eliminar_proyecto,
+                "24": self._actualizar_registro_tiempo,
+                "25": self._eliminar_registro_tiempo,
+                "26": self._actualizar_mis_datos,
             }
             opcion_cerrar = "11"
         else:
             acciones = {
                 "1": self._mostrar_mi_ficha,
-                "2": self._mostrar_mis_registros,
-                "3": self._actualizar_mis_datos,
-                "4": self._consultar_dolar,
-                "5": self._cambiar_password,
+                "2": self._mostrar_mis_proyectos,
+                "3": self._registrar_mis_horas,
+                "4": self._menu_indicadores,
+                "5": self._mostrar_mis_registros,
+                "6": self._actualizar_mis_datos,
+                "7": self._cambiar_password,
             }
             opcion_cerrar = "9"
 
@@ -100,17 +128,14 @@ class TerminalInterface:
             except EOFError:
                 print("\nEntrada finalizada.")
                 return "salir"
-
             if opcion == opcion_cerrar:
                 print("\nSesión cerrada.")
                 return "logout"
-
             accion = acciones.get(opcion)
             if accion is None:
-                print("Opcion no valida. Seleccione una opción disponible.")
+                print("Opción no válida. Seleccione una opción disponible.")
                 self._pausar()
                 continue
-
             try:
                 accion()
             except EOFError:
@@ -118,9 +143,9 @@ class TerminalInterface:
                 return "salir"
             except (PermissionError, ValueError, TypeError) as error:
                 print(f"\nOperación rechazada: {error}")
-            except Exception as error:
-                print(f"\nNo se pudo completar la operacion: {error}")
-
+            except Exception:
+                # No se exponen trazas, SQL, credenciales ni detalles internos al usuario.
+                print("\nNo se pudo completar la operación. Revise la configuración o los datos e intente nuevamente.")
             self._pausar()
 
     @staticmethod
@@ -162,7 +187,7 @@ class TerminalInterface:
         departamento = Departamento(
             self._pedir_texto("Nombre del departamento", 100)
         )
-        self.departamento_dao.insertar(departamento)
+        gestion_departamentos.registrar(self.usuario, self.departamento_dao, departamento)
         print(f"\nDepartamento registrado. ID asignado: {departamento.id_departamento}")
 
     def _registrar_proyecto(self):
@@ -173,7 +198,7 @@ class TerminalInterface:
             self._pedir_texto("Descripcion", 500),
             self._pedir_fecha("Fecha de inicio (AAAA-MM-DD)"),
         )
-        self.proyecto_dao.insertar(proyecto)
+        gestion_proyectos.registrar(self.usuario, self.proyecto_dao, proyecto)
         print(f"\nProyecto registrado correctamente. ID asignado: {proyecto.id_proyecto}")
 
     def _registrar_tiempo(self):
@@ -188,7 +213,7 @@ class TerminalInterface:
             id_empleado,
             id_proyecto,
         )
-        self.registro_dao.insertar(registro)
+        gestion_tiempos.registrar(self.usuario, self.registro_dao, registro)
         print(f"\nRegistro de tiempo guardado. ID asignado: {registro.id_registro}")
 
     # -------------------- CONSULTAS Y TABLAS --------------------
@@ -197,6 +222,10 @@ class TerminalInterface:
         self._titulo("LISTADO DE " + titulo)
         if titulo == "EMPLEADOS":
             datos = gestion_empleados.listar_todos(self.usuario, dao)
+        elif titulo == "DEPARTAMENTOS":
+            datos = gestion_departamentos.listar(self.usuario, dao)
+        elif titulo == "PROYECTOS":
+            datos = gestion_proyectos.listar(self.usuario, dao)
         else:
             exigir_admin(self.usuario)
             datos = dao.obtener_todos()
@@ -402,26 +431,214 @@ class TerminalInterface:
         except ValueError as error:
             print(f"No se pudo cambiar la contraseña: {error}")
 
+    def _menu_indicadores(self):
+        exigir_sesion(self.usuario)
+        while True:
+            self._titulo("INDICADORES ECONÓMICOS")
+            print("1. Consultar dólar observado (API y guardar/actualizar)")
+            print("2. Ver historial guardado en la base local")
+            print("0. Volver al menú principal")
+            opcion = self._pedir_texto("Seleccione una opción: ", 1)
+            if opcion == "1":
+                self._consultar_dolar()
+            elif opcion == "2":
+                self._mostrar_historial_indicador()
+            elif opcion == "0":
+                return
+            else:
+                print("Opción no válida.")
+
     def _consultar_dolar(self):
         exigir_sesion(self.usuario)
-        self._titulo("DÓLAR OBSERVADO - API")
-        try:
-            import math
-            import requests
-            respuesta = requests.get("https://mindicador.cl/api/dolar", timeout=(3, 5))
-            respuesta.raise_for_status()
-            datos = respuesta.json()
-            if not isinstance(datos, dict) or not isinstance(datos.get("serie"), list) or not datos["serie"]:
-                raise ValueError("La API no entregó una serie válida.")
-            registro = datos["serie"][0]
-            valor = registro.get("valor")
-            fecha = registro.get("fecha")
-            if type(valor) not in (int, float) or not math.isfinite(valor) or valor <= 0:
-                raise ValueError("El valor del dólar recibido no es válido.")
-            print(f"Valor de referencia: ${valor:,.2f} CLP por USD")
-            print(f"Fecha de referencia: {fecha}")
-        except Exception as error:
-            print(f"No fue posible consultar el dólar ahora: {error}")
+        self._titulo("CONSULTA DEL DÓLAR OBSERVADO")
+        if self.indicador_dao is None:
+            print("El acceso al historial no está configurado.")
+            return
+        resultado = indicadores.consultar_indicador(self.usuario, self.indicador_dao)
+        dato = resultado.get("indicador")
+        print(resultado.get("mensaje", "Consulta finalizada."))
+        if dato is None:
+            print("No hay información disponible para mostrar.")
+            return
+        print(f"Valor: ${dato.valor:,.2f} {dato.unidad}")
+        print(f"Fecha del dato: {dato.fecha}")
+        print(f"Fuente: {dato.fuente}")
+        print(f"Origen de esta respuesta: {resultado.get('origen')}")
+        if resultado.get("origen") == "API":
+            print("Guardado local confirmado." if resultado.get("guardado") else
+                  "Aviso: el dato API se recibió, pero no se confirmó su guardado local.")
+        else:
+            print(f"Última verificación registrada: {dato.verificado_en}")
+            print("Este valor proviene de la BD local y no se presenta como una cotización recién actualizada.")
+
+    def _mostrar_historial_indicador(self):
+        exigir_sesion(self.usuario)
+        self._titulo("HISTORIAL LOCAL DEL DÓLAR")
+        if self.indicador_dao is None:
+            print("El historial no está configurado.")
+            return
+        historial = indicadores.obtener_historial(self.usuario, self.indicador_dao)
+        if not historial:
+            print("Todavía no existen observaciones guardadas.")
+            return
+        print(f"{'FECHA':<14} {'VALOR':>14} {'UNIDAD':<12} {'FUENTE':<18} ÚLTIMA VERIFICACIÓN")
+        print("-" * 90)
+        for dato in historial:
+            print(f"{dato.fecha:<14} {dato.valor:>14,.2f} {dato.unidad:<12} {dato.fuente:<18} {dato.verificado_en}")
+        print("\nOrigen: base de datos local. Esta consulta no llama a la API.")
+
+    def _mostrar_mis_proyectos(self):
+        exigir_sesion(self.usuario)
+        self._titulo("MIS PROYECTOS ASIGNADOS")
+        proyectos = mi_cuenta.mis_proyectos(self.usuario, self.proyecto_dao)
+        if not proyectos:
+            print("No tienes proyectos asignados actualmente.")
+            return
+        print(f"{'ID':<6} {'NOMBRE':<28} {'FECHA INICIO':<14} DESCRIPCIÓN")
+        print("-" * 90)
+        for proyecto in proyectos:
+            print(f"{proyecto['id_proyecto']:<6} {self._cortar(proyecto['nombre'], 28):<28} {str(proyecto['fecha_inicio']):<14} {self._cortar(proyecto['descripcion'], 35)}")
+
+    def _registrar_mis_horas(self):
+        exigir_sesion(self.usuario)
+        self._titulo("REGISTRAR MIS HORAS")
+        proyectos = mi_cuenta.mis_proyectos(self.usuario, self.proyecto_dao)
+        if not proyectos:
+            print("No puedes registrar horas porque no tienes proyectos asignados.")
+            return
+        print("Proyectos disponibles para tu cuenta:")
+        for proyecto in proyectos:
+            print(f"  [{proyecto['id_proyecto']}] {proyecto['nombre']}")
+        ids = {p['id_proyecto'] for p in proyectos}
+        while True:
+            id_proyecto = self._pedir_int("ID del proyecto asignado")
+            if id_proyecto in ids:
+                break
+            print("Selecciona un proyecto de la lista asignada a tu cuenta.")
+        fecha = self._pedir_fecha("Fecha trabajada (AAAA-MM-DD)")
+        horas = self._pedir_float("Horas trabajadas (0.01 a 24)", minimo=0.01, maximo=24)
+        descripcion = self._pedir_texto("Descripción del trabajo", 500)
+        registro = mi_cuenta.registrar_horas(
+            self.usuario, self.proyecto_dao, self.registro_dao,
+            id_proyecto, fecha, horas, descripcion,
+        )
+        print(f"Registro propio guardado. ID: {registro.id_registro}")
+
+    def _asignar_empleado_proyecto(self):
+        exigir_admin(self.usuario)
+        self._titulo("ASIGNAR EMPLEADO A PROYECTO")
+        id_proyecto = self._pedir_id_existente(self.proyecto_dao, "proyecto")
+        id_empleado = self._pedir_id_existente(self.empleado_dao, "empleado")
+        creado = gestion_proyectos.asignar_empleado(
+            self.usuario, self.proyecto_dao, self.empleado_dao, id_proyecto, id_empleado
+        )
+        print("Asignación creada correctamente." if creado else "El empleado ya estaba asignado a ese proyecto.")
+
+    def _desasignar_empleado_proyecto(self):
+        exigir_admin(self.usuario)
+        self._titulo("DESASIGNAR EMPLEADO DE PROYECTO")
+        id_proyecto = self._pedir_id_existente(self.proyecto_dao, "proyecto")
+        id_empleado = self._pedir_id_existente(self.empleado_dao, "empleado")
+        resultado = gestion_proyectos.desasignar_empleado(
+            self.usuario, self.proyecto_dao, id_proyecto, id_empleado
+        )
+        print("Asignación eliminada." if resultado else "No existía esa asignación.")
+
+    def _actualizar_departamento(self):
+        exigir_admin(self.usuario)
+        self._titulo("ACTUALIZAR DEPARTAMENTO")
+        id_departamento = self._pedir_id_existente(self.departamento_dao, "departamento")
+        actual = self.departamento_dao.obtener_por_id(id_departamento)
+        departamento = Departamento(self._pedir_texto("Nuevo nombre", 100), id_departamento=id_departamento,
+                                    id_gerente=actual.get("id_gerente"))
+        if self._pedir_confirmacion("¿Guardar el nuevo nombre? (s/n)"):
+            resultado = gestion_departamentos.actualizar(
+                self.usuario, self.departamento_dao, id_departamento, departamento
+            )
+            print("Departamento actualizado." if resultado else "No se detectaron cambios.")
+        else:
+            print("Actualización cancelada.")
+
+    def _eliminar_departamento(self):
+        exigir_admin(self.usuario)
+        self._titulo("ELIMINAR DEPARTAMENTO")
+        id_departamento = self._pedir_id_existente(self.departamento_dao, "departamento")
+        if not self._pedir_confirmacion("¿Confirmar eliminación? (s/n)"):
+            print("Eliminación cancelada.")
+            return
+        resultado = gestion_departamentos.eliminar(self.usuario, self.departamento_dao, id_departamento)
+        print("Departamento eliminado." if resultado else "No se pudo eliminar el departamento.")
+
+    def _asignar_gerente(self):
+        exigir_admin(self.usuario)
+        self._titulo("ASIGNAR GERENTE A DEPARTAMENTO")
+        id_departamento = self._pedir_id_existente(self.departamento_dao, "departamento")
+        id_empleado = self._pedir_id_existente(self.empleado_dao, "empleado")
+        resultado = gestion_departamentos.asignar_gerente(
+            self.usuario, self.departamento_dao, self.empleado_dao,
+            id_departamento, id_empleado,
+        )
+        print("Gerente asignado correctamente." if resultado else "No se pudo asignar el gerente.")
+
+    def _actualizar_proyecto(self):
+        exigir_admin(self.usuario)
+        self._titulo("ACTUALIZAR PROYECTO")
+        id_proyecto = self._pedir_id_existente(self.proyecto_dao, "proyecto")
+        proyecto = Proyecto(
+            self._pedir_texto("Nuevo nombre", 100),
+            self._pedir_texto("Nueva descripción", 500),
+            self._pedir_fecha("Nueva fecha de inicio (AAAA-MM-DD)"),
+            id_proyecto=id_proyecto,
+        )
+        if self._pedir_confirmacion("¿Guardar los cambios? (s/n)"):
+            resultado = gestion_proyectos.actualizar(self.usuario, self.proyecto_dao, id_proyecto, proyecto)
+            print("Proyecto actualizado." if resultado else "No se detectaron cambios.")
+        else:
+            print("Actualización cancelada.")
+
+    def _eliminar_proyecto(self):
+        exigir_admin(self.usuario)
+        self._titulo("ELIMINAR PROYECTO")
+        id_proyecto = self._pedir_id_existente(self.proyecto_dao, "proyecto")
+        print("Aviso: también se eliminarán relaciones y registros vinculados según las claves foráneas.")
+        if not self._pedir_confirmacion("¿Confirmar eliminación? (s/n)"):
+            print("Eliminación cancelada.")
+            return
+        resultado = gestion_proyectos.eliminar(self.usuario, self.proyecto_dao, id_proyecto)
+        print("Proyecto eliminado." if resultado else "No se pudo eliminar el proyecto.")
+
+    def _actualizar_registro_tiempo(self):
+        exigir_admin(self.usuario)
+        self._titulo("ACTUALIZAR REGISTRO DE TIEMPO")
+        id_registro = self._pedir_int("ID del registro")
+        actual = self.registro_dao.obtener_por_id(id_registro)
+        if actual is None:
+            print("No existe ese registro.")
+            return
+        id_empleado = self._pedir_id_existente(self.empleado_dao, "empleado")
+        id_proyecto = self._pedir_id_existente(self.proyecto_dao, "proyecto")
+        registro = RegistroTiempo(
+            self._pedir_fecha("Fecha (AAAA-MM-DD)"),
+            self._pedir_float("Horas trabajadas (0.01 a 24)", 0.01, 24),
+            self._pedir_texto("Descripción", 500), id_empleado, id_proyecto, id_registro,
+        )
+        if self._pedir_confirmacion("¿Guardar los cambios? (s/n)"):
+            actualizado = gestion_tiempos.actualizar(
+                self.usuario, self.registro_dao, id_registro, registro
+            )
+            print("Registro actualizado." if actualizado else "No se detectaron cambios.")
+        else:
+            print("Actualización cancelada.")
+
+    def _eliminar_registro_tiempo(self):
+        exigir_admin(self.usuario)
+        self._titulo("ELIMINAR REGISTRO DE TIEMPO")
+        id_registro = self._pedir_int("ID del registro")
+        if not self._pedir_confirmacion("¿Confirmar eliminación? (s/n)"):
+            print("Eliminación cancelada.")
+            return
+        eliminado = gestion_tiempos.eliminar(self.usuario, self.registro_dao, id_registro)
+        print("Registro eliminado." if eliminado else "No existe ese registro.")
 
     def _cargar_semilla(self):
         exigir_admin(self.usuario)

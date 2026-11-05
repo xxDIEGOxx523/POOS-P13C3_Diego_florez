@@ -42,6 +42,21 @@ class ProyectoDAO(IProyectoDAO):
             cursor.close()
             conexion.close()
 
+    def listar_por_empleado(self, id_empleado):
+        """Lista proyectos asociados al empleado indicado por el servicio."""
+        conexion = abrir_conexion()
+        cursor = conexion.cursor()
+        try:
+            cursor.execute("""SELECT p.id_proyecto, p.nombre, p.descripcion, p.fecha_inicio
+                FROM proyecto p INNER JOIN empleado_proyecto ep
+                    ON ep.id_proyecto=p.id_proyecto
+                WHERE ep.id_empleado=%s ORDER BY p.fecha_inicio DESC, p.id_proyecto""",
+                (id_empleado,))
+            return [self._fila_a_dict(fila) for fila in cursor.fetchall()]
+        finally:
+            cursor.close()
+            conexion.close()
+
     def actualizar(self, id_proyecto, proyecto):
         conexion = abrir_conexion()
         cursor = conexion.cursor()

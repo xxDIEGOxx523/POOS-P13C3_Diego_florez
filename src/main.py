@@ -2,8 +2,10 @@ from pathlib import Path
 import sys
 from getpass import getpass
 
-# El proyecto conserva la carpeta src bajo DOC_2; se agrega al path sin mover archivos.
-SRC_DIR = Path(__file__).resolve().parent / "src"
+# Estructura nativa: main.py y src/ están directamente en la raíz del proyecto.
+# Se agrega src al path para conservar los imports por capas (dominio, persistencia, etc.).
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = Path(__file__).resolve().parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
@@ -68,6 +70,7 @@ def main():
         empleado_dao = factory.get_empleado_dao()
         proyecto_dao = factory.get_proyecto_dao()
         departamento_dao = factory.get_departamento_dao()
+        indicador_dao = factory.get_indicador_dao()
 
         print("Precargando datos iniciales (sin duplicar registros)...")
         resumen = cargar_semilla(
@@ -108,16 +111,18 @@ def main():
                 departamento_dao,
                 usuario=usuario,
                 autenticacion=autenticacion,
+                indicador_dao=indicador_dao,
             )
             resultado = app.iniciar()
             if resultado == "salir":
                 print("Sistema finalizado.")
                 break
             print("\nSesión cerrada. Para continuar, vuelva a iniciar sesión.")
-    except Exception as error:
-        print(f"Error al iniciar el sistema: {error}")
+    except Exception:
+        # Mensaje controlado: no exponer cadenas de conexión ni detalles internos al usuario.
+        print("No fue posible iniciar EcoTech Solutions.")
         print(
-            "Compruebe DB_BACKEND, la configuración del archivo .env "
+            "Revise DB_BACKEND, el archivo .env, el servicio de base de datos "
             "y las dependencias de requirements.txt."
         )
 
