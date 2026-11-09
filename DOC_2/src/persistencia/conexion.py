@@ -7,10 +7,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# La raíz del proyecto es la carpeta que contiene main.py, .env y requirements.txt.
-# Se calcula desde este archivo para no depender del directorio actual de PowerShell.
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
+load_dotenv()
 
 
 def obtener_motor():
@@ -26,7 +23,7 @@ def obtener_configuracion():
         "host": os.getenv("DB_HOST", "localhost"),
         "port": int(os.getenv("DB_PORT", "3307")),
         "user": os.getenv("DB_USER", "root"),
-        "password": os.getenv("DB_PASSWORD", "1234"),
+        "password": os.getenv("DB_PASSWORD", ""),
         "database": os.getenv("DB_NAME", "ecotech_db"),
         "charset": "utf8mb4",
         "collation": "utf8mb4_unicode_ci",
@@ -104,7 +101,8 @@ def _ruta_sqlite():
     if not ruta.is_absolute():
         # Estable y predecible: archivo en la raíz del repositorio, independiente
         # de la carpeta desde la que se ejecute main.py.
-        ruta = PROJECT_ROOT / ruta
+        raiz = Path(__file__).resolve().parents[3]
+        ruta = raiz / ruta
     ruta.parent.mkdir(parents=True, exist_ok=True)
     return ruta
 

@@ -353,3 +353,44 @@ Instale las dependencias desde la raíz del proyecto en PowerShell:
     python -m pip install -r requirements.txt
 
 Después ejecute desde la carpeta DOC_2 con `python main.py`. El esquema y la semilla se preparan automáticamente para el motor seleccionado.
+
+
+INTEGRACION API MINDICADOR Y SEGURIDAD (REVISION ACTUAL)
+--------------------------------------------------------
+La consulta del dolar esta centralizada en:
+DOC_2/src/servicios/api_dolar.py
+
+Flujo:
+1. La interfaz invoca consultar_dolar(self.usuario).
+2. exigir_sesion valida la sesion antes de acceder a la red.
+3. requests.get consulta una URL HTTPS fija, con timeout.
+4. raise_for_status comprueba el codigo HTTP.
+5. response.json interpreta el JSON.
+6. deserializar_indicador valida estructura, codigo, serie, valor y fecha.
+7. Se devuelve un objeto IndicadorDolar para mostrarlo en el menu.
+
+Errores controlados:
+- timeout y conectividad;
+- errores HTTP;
+- otros errores de requests;
+- JSON invalido y datos incompletos o inesperados.
+
+No se solicita al usuario una URL ni se construye la URL con texto ingresado.
+Las credenciales de BD deben estar en .env (no subir .env al repositorio).
+Las contrasenas de usuarios se almacenan como hashes bcrypt, no como texto plano.
+
+EVIDENCIA Y REVISION DE IA
+--------------------------
+Consultar DOCUMENTACION_REVISION_IA.md. El estudiante debe completar el
+registro con las consultas reales realizadas y marcar solo las pruebas que
+haya ejecutado. No declarar pruebas no realizadas.
+
+
+PRUEBAS AUTOMATIZADAS DE API
+----------------------------
+Desde la raiz del proyecto, con el entorno virtual activo:
+
+python -m unittest discover -s DOC_2/tests -v
+
+Las pruebas validan extraccion JSON, rechazo de datos invalidos, sesion,
+timeout y uso de timeout HTTP. No sustituyen una prueba real con Internet.

@@ -1,8 +1,13 @@
-__pycache__/
-*.py[cod]
+# Entorno virtual del proyecto
 .venv/
-venv/
+
+# Configuración del editor de código
+.vscode/
+
+# Archivos con credenciales y variables de entorno secretas
 .env
-*.db
-*.sqlite
-*.sqlite3
+
+__pycache__/
+*.pyc
+.env
+*.py[cod]\n*.db\n*.sqlite3\n
