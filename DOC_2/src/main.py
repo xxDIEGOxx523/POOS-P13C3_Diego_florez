@@ -114,13 +114,15 @@ def main():
                 print("Sistema finalizado.")
                 break
             print("\nSesión cerrada. Para continuar, vuelva a iniciar sesión.")
-    except Exception as error:
-        print(f"Error al iniciar el sistema: {error}")
+    except Exception:
+        print("No fue posible iniciar EcoTech Solutions.")
         print(
-            "Compruebe DB_BACKEND, la configuración del archivo .env "
-            "y las dependencias de requirements.txt."
+            "Compruebe DB_BACKEND, la configuración del archivo .env, "
+            "el servicio de base de datos y las dependencias de requirements.txt."
         )
+        print("Por seguridad no se muestran detalles internos de la conexión.")
 
 
 if __name__ == "__main__":
     main()
+
