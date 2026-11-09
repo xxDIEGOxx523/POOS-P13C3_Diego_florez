@@ -133,6 +133,16 @@ def _crear_sqlite():
                 FOREIGN KEY (id_empleado) REFERENCES empleado(id_empleado)
                     ON UPDATE CASCADE ON DELETE CASCADE
             )""",
+            """CREATE TABLE IF NOT EXISTS indicador_api (
+                id_indicador INTEGER PRIMARY KEY AUTOINCREMENT,
+                fuente TEXT NOT NULL,
+                codigo TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                valor NUMERIC NOT NULL CHECK (valor > 0),
+                unidad TEXT NOT NULL,
+                verificado_en TEXT NOT NULL,
+                UNIQUE (fuente, codigo, fecha)
+            )""",
         ]
         for sql in sentencias:
             cursor.execute(sql)
@@ -265,6 +275,17 @@ def crear_base_y_tablas():
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT fk_usuario_empleado FOREIGN KEY (id_empleado)
                 REFERENCES empleado(id_empleado) ON UPDATE CASCADE ON DELETE CASCADE
+        ) ENGINE=InnoDB""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS indicador_api (
+            id_indicador INT AUTO_INCREMENT PRIMARY KEY,
+            fuente VARCHAR(80) NOT NULL,
+            codigo VARCHAR(30) NOT NULL,
+            fecha DATETIME NOT NULL,
+            valor DECIMAL(18,6) NOT NULL,
+            unidad VARCHAR(30) NOT NULL,
+            verificado_en DATETIME NOT NULL,
+            UNIQUE KEY uq_indicador_observacion (fuente, codigo, fecha),
+            INDEX ix_indicador_fecha (codigo, fecha)
         ) ENGINE=InnoDB""")
 
         # Migraciones compatibles con esquemas de versiones previas.
