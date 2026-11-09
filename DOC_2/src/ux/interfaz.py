@@ -11,7 +11,11 @@ from dominio.usuario import Usuario
 from semilla import cargar_semilla, imprimir_resumen
 from servicios.permisos import exigir_admin, exigir_sesion
 from servicios import gestion_empleados, mi_cuenta
-from servicios.api_dolar import consultar_dolar
+from servicios.indicadores import (
+    consultar_y_conservar_dolar,
+    obtener_historial_dolar,
+    IndicadorNoDisponible,
+)
 
 
 class TerminalInterface:
@@ -52,6 +56,7 @@ class TerminalInterface:
             print("   [13] Consultar dólar observado (API)")
             print("   [14] Cambiar contraseña")
             print("   [15] Registrar cuenta de empleado")
+            print("   [16] Consultar historial del dólar")
             print("   [11] Cerrar sesión")
         else:
             print("  MI CUENTA")
@@ -60,6 +65,7 @@ class TerminalInterface:
             print("    [3] Modificar mi nombre y correo")
             print("    [4] Consultar dólar observado (API)")
             print("    [5] Cambiar contraseña")
+            print("    [6] Consultar historial del dólar")
             print("    [9] Cerrar sesión")
         print(linea)
         print("El sistema comprueba los permisos antes de ejecutar cada operación.")
@@ -82,6 +88,7 @@ class TerminalInterface:
                 "13": self._consultar_dolar,
                 "14": self._cambiar_password,
                 "15": self._registrar_cuenta,
+                "16": self._consultar_historial_dolar,
             }
             opcion_cerrar = "11"
         else:
@@ -91,6 +98,7 @@ class TerminalInterface:
                 "3": self._actualizar_mis_datos,
                 "4": self._consultar_dolar,
                 "5": self._cambiar_password,
+                "6": self._consultar_historial_dolar,
             }
             opcion_cerrar = "9"
 
@@ -119,8 +127,14 @@ class TerminalInterface:
                 return "salir"
             except (PermissionError, ValueError, TypeError) as error:
                 print(f"\nOperación rechazada: {error}")
-            except Exception as error:
-                print(f"\nNo se pudo completar la operacion: {error}")
+            except IndicadorNoDisponible as error:
+                print(f"\n{error}")
+            except Exception:
+                print(
+                    "\nNo se pudo completar la operación. "
+                    "Revise la configuración y vuelva a intentarlo. "
+                    "No se muestran detalles internos por seguridad."
+                )
 
             self._pausar()
 
@@ -404,12 +418,186 @@ class TerminalInterface:
             print(f"No se pudo cambiar la contraseña: {error}")
 
     def _consultar_dolar(self):
-        """Consulta API únicamente desde una sesión autenticada."""
+        """Consulta, valida y conserva el dólar, con respaldo local autenticado."""
         exigir_sesion(self.usuario)
         self._titulo("CONSULTA DEL DÓLAR OBSERVADO")
-        indicador = consultar_dolar(self.usuario)
+        resultado = consultar_y_conservar_dolar(self.usuario)
+        indicador = resultado.indicador
         print(f"Indicador: {indicador.nombre} ({indicador.codigo})")
         print(f"Valor: ${indicador.valor:,.2f} {indicador.unidad}")
-        print(f"Fecha informada por la API: {indicador.fecha.isoformat()}")
-        print(f"Fuente: {indicador.fuente}")
-        print("Resultado recibido y validado correctamente.")
+        print(f"Fecha del dato: {indicador.fecha.isoformat()}")
+        print(f"Origen del dato: {resultado.origen}")
+        if resultado.guardado:
+            print("Persistencia: confirmada en la base de datos.")
+        elif resultado.mensaje:
+            print(f"Aviso: {resultado.mensaje}")
+
+        monto_usd = self._pedir_float(
+            "Monto en USD para calcular una referencia en CLP (0 para omitir)",
+            minimo=0,
+            maximo=9999999999.99,
+        )
+        if monto_usd > 0:
+            equivalente = monto_usd * indicador.valor
+            print(
+                f"\nReferencia: USD {monto_usd:,.2f} equivalen aproximadamente "
+                f"a CLP ${equivalente:,.2f}."
+            )
+            print("Esta conversión es informativa y no reemplaza una liquidación de nómina.")
+
+    def _consultar_historial_dolar(self):
+        """Muestra los últimos indicadores persistidos sin consultar la API."""
+        exigir_sesion(self.usuario)
+        self._titulo("HISTORIAL LOCAL DEL DÓLAR")
+        historial = obtener_historial_dolar(self.usuario, limite=20)
+        if not historial:
+            print("Todavía no hay indicadores guardados. Consulte el dólar primero.")
+            return
+
+        print(f"{'FECHA DEL DATO':<24} {'VALOR':>14} {'UNIDAD':<12} {'VERIFICADO EN':<22}")
+        print("-" * 76)
+        for fila in historial:
+            fecha = str(fila.get("fecha", ""))[:19]
+            verificado = str(fila.get("verificado_en", ""))[:19]
+            valor = float(fila.get("valor", 0))
+            print(
+                f"{fecha:<24} {valor:>14,.2f} "
+                f"{str(fila.get('unidad', '')):<12} {verificado:<22}"
+            )
+        print("\nHistorial recuperado desde la base de datos local; no se llamó a la API.")
+
+    # -------------------- SEMILLA Y VALIDACION DE ENTRADAS --------------------
+    def _cargar_semilla(self):
+        exigir_admin(self.usuario)
+        self._titulo("CARGAR SEMILLA DE DATOS FICTICIOS")
+        print("Se prepararan hasta 10 registros de demostracion en cada tabla.")
+        print("Los datos no pertenecientes a la semilla no se borraran.")
+        print("Si ya existen registros de semilla, no se duplicaran.\n")
+
+        if not self._pedir_confirmacion("¿Desea cargar la semilla? (s/n)"):
+            print("Carga cancelada.")
+            return
+
+        resumen = cargar_semilla(
+            self.registro_dao,
+            self.empleado_dao,
+            self.proyecto_dao,
+            self.departamento_dao,
+        )
+        imprimir_resumen(resumen)
+
+    # -------------------- VALIDACION DE ENTRADAS --------------------
+    @staticmethod
+    def _leer_linea_limitada(mensaje, maximo):
+        """Lee como maximo unos pocos caracteres y descarta el resto de una linea larga."""
+        sys.stdout.write(f"{mensaje} [max. {maximo} caracteres]: ")
+        sys.stdout.flush()
+
+        linea = sys.stdin.readline(maximo + 2)
+        if linea == "":
+            raise EOFError("No se recibio mas entrada.")
+
+        if "\n" in linea:
+            valor = linea.split("\n", 1)[0]
+            if valor.endswith("\r"):
+                valor = valor[:-1]
+            if len(valor) > maximo:
+                raise ValueError(f"El limite es de {maximo} caracteres. Intente nuevamente.")
+            return valor
+
+        if len(linea) > maximo:
+            # Descarta el resto de la linea por bloques, sin guardarla completa en memoria.
+            while True:
+                resto = sys.stdin.readline(4096)
+                if not resto or resto.endswith("\n"):
+                    break
+            raise ValueError(f"El limite es de {maximo} caracteres. Intente nuevamente.")
+
+        return linea[:-1] if linea.endswith("\r") else linea
+
+    @classmethod
+    def _pedir_texto(cls, mensaje, maximo):
+        while True:
+            try:
+                valor = cls._leer_linea_limitada(mensaje, maximo).strip()
+            except ValueError as error:
+                print(error)
+                continue
+
+            if not valor:
+                print("Este campo es obligatorio. No puede quedar vacio.")
+                continue
+            if len(valor) > maximo:
+                print(f"El limite es de {maximo} caracteres.")
+                continue
+            return valor
+
+    def _pedir_correo(self):
+        patron = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+        while True:
+            correo = self._pedir_texto("Correo", 150)
+            if re.fullmatch(patron, correo):
+                return correo
+            print("Correo invalido. Ejemplo: usuario@empresa.cl")
+
+    def _pedir_telefono(self):
+        while True:
+            telefono = self._pedir_texto("Telefono", 30)
+            digitos = re.sub(r"\D", "", telefono)
+            if re.fullmatch(r"[0-9()+ -]+", telefono) and 7 <= len(digitos) <= 15:
+                return telefono
+            print("Telefono invalido. Use de 7 a 15 digitos y solo numeros, +, parentesis, espacios o guiones.")
+
+    def _pedir_int(self, mensaje):
+        while True:
+            texto = self._pedir_texto(mensaje, 10)
+            if not re.fullmatch(r"[0-9]+", texto):
+                print("Ingrese un numero entero positivo.")
+                continue
+            valor = int(texto)
+            if not 1 <= valor <= 2147483647:
+                print("El numero debe estar entre 1 y 2147483647.")
+                continue
+            return valor
+
+    def _pedir_float(self, mensaje, minimo=0, maximo=9999999999.99):
+        while True:
+            texto = self._pedir_texto(mensaje, 20)
+            if not re.fullmatch(r"[0-9]+(?:[.,][0-9]{1,2})?", texto):
+                print("Ingrese un numero valido con hasta 2 decimales. No use separadores de miles.")
+                continue
+
+            valor = float(texto.replace(",", "."))
+            if valor < minimo or valor > maximo:
+                print(f"El valor debe estar entre {minimo} y {maximo}.")
+                continue
+            return valor
+
+    def _pedir_fecha(self, mensaje):
+        while True:
+            texto = self._pedir_texto(mensaje, 10)
+            try:
+                return datetime.strptime(texto, "%Y-%m-%d").date()
+            except ValueError:
+                print("Fecha invalida. Use AAAA-MM-DD y una fecha real, por ejemplo 2026-10-15.")
+
+    def _pedir_id_existente(self, dao, tipo):
+        while True:
+            identificador = self._pedir_int(f"ID del {tipo}")
+            if dao.obtener_por_id(identificador) is not None:
+                return identificador
+            print(f"No existe un {tipo} con ID {identificador}. Intente nuevamente.")
+
+    def _pedir_confirmacion(self, mensaje):
+        while True:
+            respuesta = self._pedir_texto(mensaje, 1).lower()
+            if respuesta in ("s", "n"):
+                return respuesta == "s"
+            print("Responda solamente s o n.")
+
+    @staticmethod
+    def _cortar(valor, ancho):
+        texto = str(valor if valor is not None else "")
+        if len(texto) <= ancho:
+            return texto
+        return texto[:max(0, ancho - 3)] + "..."
