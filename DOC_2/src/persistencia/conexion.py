@@ -7,7 +7,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 
 def obtener_motor():
@@ -116,7 +117,7 @@ def abrir_conexion():
             raw.execute("PRAGMA foreign_keys = ON")
             return ConexionSQLite(raw)
         except sqlite3.Error as e:
-            raise ConnectionError(f"No fue posible abrir la base SQLite: {e}") from e
+            raise ConnectionError("No fue posible abrir la base SQLite.") from e
 
     try:
         import mysql.connector
@@ -124,7 +125,7 @@ def abrir_conexion():
     except ImportError as e:
         raise ConnectionError("Falta mysql-connector-python. Instale requirements.txt o seleccione DB_BACKEND=sqlite.") from e
     except Exception as e:
-        raise ConnectionError(f"No fue posible conectar con MySQL: {e}") from e
+        raise ConnectionError("No fue posible conectar con MySQL. Revise el servicio y .env.") from e
 
 
 def abrir_conexion_servidor():
@@ -139,4 +140,4 @@ def abrir_conexion_servidor():
     except ImportError as e:
         raise ConnectionError("Falta mysql-connector-python para usar MySQL.") from e
     except Exception as e:
-        raise ConnectionError(f"No fue posible conectar con el servidor MySQL: {e}") from e
+        raise ConnectionError("No fue posible conectar con el servidor MySQL. Revise el servicio y .env.") from e
