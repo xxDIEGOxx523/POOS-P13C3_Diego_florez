@@ -3,7 +3,9 @@ import unittest
 from unittest.mock import Mock, patch
 import requests
 
-from servicios.api_dolar import deserializar_indicador, consultar_dolar
+from servicios.api_dolar import (
+    deserializar_indicador, consultar_dolar, ErrorHTTPDolar
+)
 
 
 class TestIndicadorDolar(unittest.TestCase):
@@ -42,6 +44,7 @@ class TestIndicadorDolar(unittest.TestCase):
     @patch("servicios.api_dolar.requests.get")
     def test_consulta_http_con_timeout_y_sesion(self, get):
         respuesta = Mock()
+        respuesta.status_code = 200
         respuesta.json.return_value = self.payload
         respuesta.raise_for_status.return_value = None
         get.return_value = respuesta
@@ -54,6 +57,42 @@ class TestIndicadorDolar(unittest.TestCase):
     def test_controla_timeout(self, get):
         get.side_effect = requests.exceptions.Timeout()
         with self.assertRaises(ConnectionError):
+            consultar_dolar(self.sesion)
+
+    @patch("servicios.api_dolar.time.sleep")
+    @patch("servicios.api_dolar.requests.get")
+    def test_error_http_404_no_reintenta(self, get, sleep):
+        respuesta = Mock()
+        respuesta.status_code = 404
+        get.return_value = respuesta
+        with self.assertRaises(ErrorHTTPDolar) as contexto:
+            consultar_dolar(self.sesion)
+        self.assertEqual(contexto.exception.codigo, 404)
+        self.assertEqual(get.call_count, 1)
+        sleep.assert_not_called()
+
+    @patch("servicios.api_dolar.time.sleep")
+    @patch("servicios.api_dolar.requests.get")
+    def test_error_http_503_reintenta_una_vez(self, get, sleep):
+        respuesta = Mock()
+        respuesta.status_code = 503
+        get.return_value = respuesta
+        with self.assertRaises(ErrorHTTPDolar) as contexto:
+            consultar_dolar(self.sesion)
+        self.assertEqual(contexto.exception.codigo, 503)
+        self.assertEqual(get.call_count, 2)
+        sleep.assert_called_once()
+
+    @patch("servicios.api_dolar.requests.get")
+    def test_rechaza_respuesta_json_mal_formada(self, get):
+        respuesta = Mock()
+        respuesta.status_code = 200
+        respuesta.raise_for_status.return_value = None
+        respuesta.json.side_effect = requests.exceptions.JSONDecodeError(
+            "JSON inválido", "<html>", 0
+        )
+        get.return_value = respuesta
+        with self.assertRaises(ValueError):
             consultar_dolar(self.sesion)
 
 
